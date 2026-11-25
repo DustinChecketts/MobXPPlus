@@ -1,0 +1,6 @@
+package-as: MobXPPlus
+ignore:
+  - AGENTS.md
+  - tests
+  - .github
+  - RESEARCH.md
