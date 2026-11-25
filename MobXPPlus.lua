@@ -3,9 +3,11 @@ local C, E = A.Compat, A.Experience
 A.defaults = { visible = true, locked = true, opacity = 0.8, buffs = true, rested = true, diagnostics = false,
     customRange = false, above = 2, below = 5, columnGap = 40, scale = 100,
     fontSize = 12, rowHeight = 14, padX = 6, padY = 6, titleGap = 4,
-    showTitle = true, colored = true, highlight = false, targetHighlight = false, ascending = false }
+    showTitle = true, colored = true, highlight = false, targetHighlight = false, ascending = false,
+    showBuffIcons=true, showInactiveBuffs=true, showBuffStacks=true, showBuffValues=false,
+    showBuffTimers=true, flashBuffs=true, warnSeconds=30, iconSize=20, iconGap=4, foodSpellID=0 }
 A.ranges = {above={0,5}, below={0,15}, columnGap={0,70}, scale={60,150},
-    fontSize={9,20}, rowHeight={14,30}, padX={0,20}, padY={0,20}, titleGap={0,16}}
+    fontSize={9,20}, rowHeight={14,30}, padX={0,20}, padY={0,20}, titleGap={0,16}, warnSeconds={10,120}, iconSize={14,40}, iconGap={0,16}}
 local frame = CreateFrame("Frame", "MobXPPlusFrame", UIParent)
 frame:SetSize(100, 40)
 frame:SetPoint("CENTER", UIParent, "CENTER", 200, 0)
@@ -48,7 +50,7 @@ function A.Refresh()
     if not A.db then return end
     local p = C.Number(UnitLevel("player"))
     if not p or p < 1 then return end
-    local bonus, rested, auras = C.Modifiers()
+    local bonus, rested, auras, modifierData = C.Modifiers()
     A.snapshot = { level = p, bonus = bonus, rested = rested, auras = auras,
         target = C.Number(UnitLevel("target")) }
     bonus = A.db.buffs and bonus or 0
@@ -72,6 +74,8 @@ function A.Refresh()
     title:SetShown(db.showTitle)
     local rowHeight = math.max(db.rowHeight, db.fontSize + 2)
     local top = db.padY + (db.showTitle and (title:GetStringHeight() + db.titleGap) or 0)
+    local buffWidth, buffHeight = A.LayoutBuffs(frame, modifierData, top)
+    top = top + buffHeight
     local low = math.max(1, E.Grey(p) + 1, db.customRange and p - db.below or 1)
     local high = p + (db.customRange and db.above or 5)
     local first, last, step = high, low, -1
@@ -105,7 +109,7 @@ function A.Refresh()
         row:Show()
     end
     for i = count + 1, #rows do rows[i]:Hide() end
-    local width = levelWidth + xpWidth + db.columnGap
+    local width = math.max(buffWidth, levelWidth + xpWidth + db.columnGap)
     if db.showTitle then width = math.max(width, title:GetStringWidth()) end
     for i = 1, count do
         local row = rows[i]
@@ -168,6 +172,10 @@ SlashCmdList.MOBXPPLUS = function(msg)
     elseif msg == "auras" then
         local b, r, ids = C.Modifiers()
         print("MobXPPlus bonus:", b, "rested:", r, "auras:", table.concat(ids, ","))
+    elseif msg:match("^food %d+$") then
+        A.db.foodSpellID = tonumber(msg:match("%d+"))
+        A.Refresh()
+        print("MobXPPlus food aura ID:", A.db.foodSpellID)
     elseif msg == "clear" then A.db.samples = {}
     else A.OpenOptions() end
 end
