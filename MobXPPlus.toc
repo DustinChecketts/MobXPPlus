@@ -2,10 +2,12 @@
 ## Title: MobXPPlus
 ## Notes: Estimated solo mob experience reference
 ## Author: StormtrooperTK421
-## Version: 0.1.1
+## Version: 0.1.2
 ## SavedVariables: MobXPPlusDB
 
 Experience.lua
 Compat.lua
+Modifiers.lua
+BuffDisplay.lua
 MobXPPlus.lua
 Options.lua
