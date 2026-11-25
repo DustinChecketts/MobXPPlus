@@ -1,0 +1,11 @@
+name: Prototype validation
+on: [push, workflow_dispatch]
+jobs:
+  stormcore:
+    uses: DustinChecketts/stormcore/.github/workflows/validate-addon.yml@main
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y lua5.1
+      - run: lua5.1 tests/experience.lua
