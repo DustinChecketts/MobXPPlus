@@ -1,0 +1,11 @@
+## Interface: 16001
+## Title: MobXPPlus
+## Notes: Estimated solo mob experience reference
+## Author: StormtrooperTK421
+## Version: 0.1.0
+## SavedVariables: MobXPPlusDB
+
+Experience.lua
+Compat.lua
+MobXPPlus.lua
+Options.lua
