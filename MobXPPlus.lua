@@ -32,6 +32,9 @@ end)
 
 function A.ApplyPosition()
     local ratio = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    if type(A.db.x) ~= "number" or type(A.db.y) ~= "number" then
+        A.db.x, A.db.y = nil, nil
+    end
     frame:ClearAllPoints()
     frame:SetPoint("CENTER", UIParent, "CENTER", (A.db.x or 200) / ratio, (A.db.y or 0) / ratio)
 end
