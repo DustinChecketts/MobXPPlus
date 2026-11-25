@@ -4,6 +4,8 @@ function A.CreateOptions()
     panel.name = "MobXPPlus"
     local checks, sliders = {}, {}
     local syncing = false
+    local buffPanel = CreateFrame("Frame")
+    buffPanel.name = "XP Buffs"
     local function heading(text, x, y)
         local label = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
         label:SetPoint("TOPLEFT", x, y)
@@ -68,6 +70,15 @@ function A.CreateOptions()
     slider("padX","Horizontal padding",268,-270,0,20,1," px",1)
     slider("padY","Vertical padding",268,-310,0,20,1," px",1)
     slider("titleGap","Title spacing",268,-350,0,16,1," px",1)
+    local mainPanel = panel
+    panel = buffPanel
+    heading("XP buff indicators",16,-16)
+    local buffChecks = {{"showBuffIcons","Show buff icons"},{"showInactiveBuffs","Show inactive icons"},{"showBuffStacks","Show stacks"},{"showBuffValues","Show bonus values"},{"showBuffTimers","Show countdowns"},{"flashBuffs","Flash expiring buffs"}}
+    for i,item in ipairs(buffChecks) do checkbox(item[1],item[2],16,-38-(i-1)*25) end
+    slider("iconSize","Icon size",268,-65,14,40,1," px",1)
+    slider("iconGap","Icon spacing",268,-105,0,16,1," px",1)
+    slider("warnSeconds","Warning threshold",268,-145,10,120,5," s",1)
+    panel = mainPanel
     local function sync()
         syncing = true
         for key, check in pairs(checks) do check:SetChecked(A.db[key]) end
@@ -90,14 +101,19 @@ function A.CreateOptions()
         sync()
         A.Refresh()
     end)
+    buffPanel:SetScript("OnShow", sync)
     panel:SetScript("OnShow", sync)
     sync()
     if Settings and Settings.RegisterCanvasLayoutCategory then
         local category = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
         Settings.RegisterAddOnCategory(category)
+        local sub = Settings.RegisterCanvasLayoutSubcategory(category,buffPanel,buffPanel.name)
+        Settings.RegisterAddOnCategory(sub)
         A.OpenOptions = function() Settings.OpenToCategory(category:GetID()) end
     else
         InterfaceOptions_AddCategory(panel)
+        buffPanel.parent = panel.name
+        InterfaceOptions_AddCategory(buffPanel)
         A.OpenOptions = function() InterfaceOptionsFrame_OpenToCategory(panel) end
     end
 end
