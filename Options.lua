@@ -2,48 +2,84 @@ local _, A = ...
 function A.CreateOptions()
     local panel = CreateFrame("Frame")
     panel.name = "MobXPPlus"
-    local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 16, -16)
-    title:SetText("MobXPPlus")
-    local checks = {}
-    local opts = {{"visible", "Show XP table"}, {"locked", "Lock position"},
-        {"buffs", "Include recognized XP buffs"}, {"rested", "Include rested XP"},
-        {"diagnostics", "Record last 10 XP messages"}}
-    for i, option in ipairs(opts) do
-        local key, label = option[1], option[2]
+    local checks, sliders = {}, {}
+    local syncing = false
+    local function heading(text, x, y)
+        local label = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        label:SetPoint("TOPLEFT", x, y)
+        label:SetText(text)
+    end
+    heading("MobXPPlus - General", 16, -16)
+    heading("Appearance", 260, -16)
+    local function checkbox(key, label, x, y)
         local check = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-        check:SetPoint("TOPLEFT", 16, -42 - (i - 1) * 30)
-        local text = check:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-        text:SetPoint("LEFT", check, "RIGHT", 4, 0)
+        check:SetPoint("TOPLEFT", x, y)
+        local text = check:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        text:SetPoint("LEFT", check, "RIGHT", 2, 0)
         text:SetText(label)
+        checks[key] = check
         check:SetScript("OnClick", function(self)
             A.db[key] = not not self:GetChecked()
+            if sliders.above then
+                sliders.above:SetEnabled(A.db.customRange)
+                sliders.below:SetEnabled(A.db.customRange)
+            end
             A.Refresh()
         end)
-        checks[key] = check
     end
-    local slider = CreateFrame("Slider", nil, panel, "OptionsSliderTemplate")
-    slider:SetPoint("TOPLEFT", 24, -220)
-    slider:SetSize(200, 16)
-    slider:SetMinMaxValues(0, 1)
-    slider:SetValueStep(0.05)
-    slider:SetObeyStepOnDrag(true)
-    local label = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    label:SetPoint("BOTTOMLEFT", slider, "TOPLEFT", 0, 3)
-    slider:SetScript("OnValueChanged", function(_, value)
-        A.db.opacity = value
-        label:SetText("Background opacity: " .. math.floor(value * 100 + 0.5) .. "%")
-        A.Refresh()
-    end)
+    local left = {{"visible","Show XP table"},{"locked","Lock position"},
+        {"buffs","Include XP buffs"},{"rested","Include rested XP"},
+        {"diagnostics","Record XP messages"},{"customRange","Use custom level range"}}
+    for i, item in ipairs(left) do checkbox(item[1], item[2], 16, -38-(i-1)*25) end
+    local right = {{"showTitle","Show title"},{"colored","Difficulty colors"},
+        {"highlight","Highlight player level"},{"targetHighlight","Highlight target level"},
+        {"ascending","Lowest level first"}}
+    for i, item in ipairs(right) do checkbox(item[1], item[2], 260, -38-(i-1)*25) end
+    local function slider(key, label, x, y, low, high, step, suffix, factor)
+        local control = CreateFrame("Slider", nil, panel, "OptionsSliderTemplate")
+        control:SetPoint("TOPLEFT", x, y)
+        control:SetSize(195, 16)
+        control:SetMinMaxValues(low, high)
+        control:SetValueStep(step)
+        control:SetObeyStepOnDrag(true)
+        local caption = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        caption:SetPoint("BOTTOMLEFT", control, "TOPLEFT", 0, 2)
+        local function update(value)
+            caption:SetText(label .. ": " .. math.floor(value * factor + 0.5) .. suffix)
+        end
+        control:SetScript("OnValueChanged", function(_, value)
+            update(value)
+            if not syncing then
+                A.db[key] = value
+                A.Refresh()
+            end
+        end)
+        sliders[key] = control
+        control:SetValue(A.db[key])
+        update(A.db[key])
+    end
+    slider("above","Levels above",24,-210,0,5,1,"",1)
+    slider("below","Levels below",24,-250,0,15,1,"",1)
+    slider("opacity","Background opacity",24,-290,0,1,0.05,"%",100)
+    slider("scale","Scale",24,-330,60,150,5,"%",1)
+    slider("fontSize","Font size",24,-370,9,20,1," pt",1)
+    slider("columnGap","Column spacing",268,-190,0,70,1," px",1)
+    slider("rowHeight","Row height",268,-230,14,30,1," px",1)
+    slider("padX","Horizontal padding",268,-270,0,20,1," px",1)
+    slider("padY","Vertical padding",268,-310,0,20,1," px",1)
+    slider("titleGap","Title spacing",268,-350,0,16,1," px",1)
     local function sync()
+        syncing = true
         for key, check in pairs(checks) do check:SetChecked(A.db[key]) end
-        slider:SetValue(A.db.opacity)
-        label:SetText("Background opacity: " .. math.floor(A.db.opacity * 100 + 0.5) .. "%")
+        for key, control in pairs(sliders) do control:SetValue(A.db[key]) end
+        sliders.above:SetEnabled(A.db.customRange)
+        sliders.below:SetEnabled(A.db.customRange)
+        syncing = false
     end
     local function button(text, x, action)
         local b = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
         b:SetSize(130, 24)
-        b:SetPoint("TOPLEFT", x, -265)
+        b:SetPoint("TOPLEFT", x, -410)
         b:SetText(text)
         b:SetScript("OnClick", action)
     end
@@ -55,6 +91,7 @@ function A.CreateOptions()
         A.Refresh()
     end)
     panel:SetScript("OnShow", sync)
+    sync()
     if Settings and Settings.RegisterCanvasLayoutCategory then
         local category = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
         Settings.RegisterAddOnCategory(category)
