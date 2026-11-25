@@ -48,7 +48,14 @@ function A.LayoutBuffs(parent, data, top)
             buttons[i]=b
         end
         bar:SetScript("OnHide",function() if ticker then ticker:Cancel(); ticker=nil end end)
-        bar:SetScript("OnShow",function() if not ticker then ticker=C_Timer.NewTicker(0.25,tick) end end)
+        bar:SetScript("OnShow",function()
+            for _, b in ipairs(buttons) do
+                if b:IsShown() and b.data and b.data.active and b.data.expires and b.data.expires>GetTime() then
+                    if not ticker then ticker=C_Timer.NewTicker(0.25,tick) end
+                    break
+                end
+            end
+        end)
     end
     local count=0
     local cell=math.max(db.iconSize,24)
@@ -82,7 +89,7 @@ function A.LayoutBuffs(parent, data, top)
     bar:SetShown(count>0)
     if count>0 then
         tick()
-        if not ticker then
+        if not ticker and bar:IsVisible() then
             for _,b in ipairs(buttons) do
                 if b:IsShown() and b.data.active and b.data.expires and b.data.expires>GetTime() then
                     ticker=C_Timer.NewTicker(0.25,tick)
