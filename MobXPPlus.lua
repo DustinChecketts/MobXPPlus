@@ -6,124 +6,9 @@ A.defaults = { visible = true, locked = true, opacity = 0.8, buffs = true, reste
     showTitle = true, colored = true, highlight = false, targetHighlight = false, ascending = false,
     showBuffIcons=true, showInactiveBuffs=true, showBuffStacks=true, showBuffValues=false,
     showBuffTimers=true, flashBuffs=true, warnSeconds=30, iconSize=20, iconGap=4, foodSpellID=0, overall=100, idle=30, fadeIdle=false, combatOnly=false, hideRest=false, hideInstance=false, combineCap=true, buffGap=3,
-    notifySoon=true, notifyExpired=false, notifyChat=false, notifyScreen=false, notifySound=false, monitor_rest=true, monitor_bag=true, monitor_food=true, warnRest=false, expireRest=false, restKills=5 }
+    notifySoon=true, notifyExpired=false, notifyChat=false, notifyScreen=false, notifySound=false, monitor_rest=true, monitor_bag=true, monitor_food=true, warnRest=false, expireRest=false, restKills=5, endgame=false, showKills=false, killsGap=8, playerAlpha=35, targetAlpha=35 }
 A.ranges = {above={0,5}, below={0,15}, columnGap={0,70}, scale={60,150},
-    fontSize={8,20}, rowHeight={14,30}, padX={0,20}, padY={0,20}, titleGap={0,16}, warnSeconds={10,300}, iconSize={12,40}, iconGap={0,16}, overall={10,100}, idle={0,100}, buffGap={0,20}, restKills={1,20}}
-local frame = CreateFrame("Frame", "MobXPPlusFrame", UIParent)
-frame:SetSize(100, 40)
-frame:SetPoint("CENTER", UIParent, "CENTER", 200, 0)
-frame:SetMovable(true)
-frame:SetClampedToScreen(true)
-frame:RegisterForDrag("LeftButton")
-frame:Hide()
-local bg = frame:CreateTexture(nil, "BACKGROUND")
-bg:SetAllPoints()
-local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-title:SetPoint("TOP", 0, -5)
-local rows = {}
-frame:SetScript("OnDragStart", function(self)
-    if not A.db.locked then self:StartMoving() end
-end)
-frame:SetScript("OnDragStop", function(self)
-    self:StopMovingOrSizing()
-    local x, y = self:GetCenter()
-    local cx, cy = UIParent:GetCenter()
-    local ratio = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
-    A.db.x, A.db.y = x * ratio - cx, y * ratio - cy
-    A.ApplyPosition()
-end)
-
-function A.ApplyPosition()
-    local ratio = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
-    if type(A.db.x) ~= "number" or type(A.db.y) ~= "number" then
-        A.db.x, A.db.y = nil, nil
-    end
-    frame:ClearAllPoints()
-    frame:SetPoint("CENTER", UIParent, "CENTER", (A.db.x or 200) / ratio, (A.db.y or 0) / ratio)
-end
-
-function A.ResetPosition()
-    A.db.x, A.db.y = nil, nil
-    A.ApplyPosition()
-end
-
-function A.Refresh()
-    if not A.db then return end
-    local p = C.Number(UnitLevel("player"))
-    if not p or p < 1 then return end
-    local bonus, rested, auras, modifierData = C.Modifiers()
-    A.snapshot = { level = p, bonus = bonus, rested = rested, auras = auras,
-        target = C.Number(UnitLevel("target")) }
-    bonus = A.db.buffs and bonus or 0
-    rested = A.db.rested and rested or 0
-    A.UpdateNotifications(modifierData,p)
-    title:SetText("Mob XP")
-    bg:SetColorTexture(0, 0, 0, A.db.opacity)
-    frame:EnableMouse(not A.db.locked)
-    local db = A.db
-    local scale = db.scale / 100
-    if frame:GetScale() ~= scale then
-        frame:SetScale(scale)
-        A.ApplyPosition()
-    end
-    local font, _, flags = GameFontHighlightSmall:GetFont()
-    title:SetFont(font, db.fontSize, flags)
-    title:ClearAllPoints()
-    title:SetPoint("TOP", 0, -db.padY)
-    title:SetShown(db.showTitle)
-    local rowHeight = math.max(db.rowHeight, db.fontSize + 2)
-    local top = db.padY + (db.showTitle and (title:GetStringHeight() + db.titleGap) or 0)
-    local buffWidth, buffHeight = A.LayoutBuffs(frame, modifierData, top)
-    top = top + buffHeight
-    local low = math.max(1, E.Grey(p) + 1, db.customRange and p - db.below or 1)
-    local high = p + (db.customRange and db.above or 5)
-    local combined = db.combineCap and high >= p+4
-    if combined then high=p+4 end
-    local first, last, step = high, low, -1
-    if db.ascending then first, last, step = low, high, 1 end
-    local count, levelWidth, xpWidth = 0, 0, 0
-    for m = first, last, step do
-        count = count + 1
-        local row = rows[count]
-        if not row then
-            row = CreateFrame("Frame", nil, frame)
-            row.highlight = row:CreateTexture(nil, "BACKGROUND")
-            row.highlight:SetAllPoints()
-            row.highlight:SetColorTexture(1, 1, 1, 0.12)
-            row.level = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            row.level:SetPoint("LEFT")
-            row.xp = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            row.xp:SetPoint("RIGHT")
-            rows[count] = row
-        end
-        local r, g, b = C.Color(p, m)
-        if not db.colored then r, g, b = 1, 1, 1 end
-        row.level:SetFont(font, db.fontSize, flags)
-        row.xp:SetFont(font, db.fontSize, flags)
-        row.level:SetText(combined and m==high and (m.."+") or m)
-        row.level:SetTextColor(r, g, b)
-        row.xp:SetText(E.Modified(E.Base(p, m, C.forever), bonus, rested))
-        row.xp:SetTextColor(r, g, b)
-        row.highlight:SetShown((db.highlight and m == p) or (db.targetHighlight and m == A.snapshot.target))
-        levelWidth = math.max(levelWidth, row.level:GetStringWidth())
-        xpWidth = math.max(xpWidth, row.xp:GetStringWidth())
-        row:Show()
-    end
-    for i = count + 1, #rows do rows[i]:Hide() end
-    local width = math.max(buffWidth, levelWidth + xpWidth + db.columnGap)
-    if db.showTitle then width = math.max(width, title:GetStringWidth()) end
-    for i = 1, count do
-        local row = rows[i]
-        row:ClearAllPoints()
-        row:SetPoint("TOPLEFT", db.padX, -top - (i - 1) * rowHeight)
-        row:SetSize(width, rowHeight)
-    end
-    frame:SetSize(math.max(1, width + 2 * db.padX), math.max(1, top + count * rowHeight + db.padY))
-    local combat = UnitAffectingCombat("player")
-    local inside = IsInInstance()
-    frame:SetAlpha(db.overall/100 * (db.fadeIdle and not combat and db.idle/100 or 1))
-    frame:SetShown(db.visible and (not db.combatOnly or combat) and (not db.hideRest or not IsResting()) and (not db.hideInstance or not inside))
-end
+    fontSize={8,20}, rowHeight={14,30}, padX={0,20}, padY={0,20}, titleGap={0,16}, warnSeconds={10,300}, iconSize={12,40}, iconGap={0,16}, overall={10,100}, idle={0,100}, buffGap={0,20}, restKills={1,20}, killsGap={0,40}, playerAlpha={10,80}, targetAlpha={10,80}}
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("ADDON_LOADED")
@@ -139,11 +24,10 @@ events:SetScript("OnEvent", function(self, event, arg)
         for key, range in pairs(A.ranges) do
             A.db[key] = math.max(range[1], math.min(range[2], math.floor(A.db[key])))
         end
-        frame:SetScale(A.db.scale / 100)
         A.ApplyPosition()
         A.db.samples = type(A.db.samples) == "table" and A.db.samples or {}
         self:UnregisterEvent(event)
-        for _, e in ipairs({"PLAYER_ENTERING_WORLD", "PLAYER_LEVEL_UP", "UNIT_AURA",
+        for _, e in ipairs({"PLAYER_ENTERING_WORLD", "PLAYER_LEVEL_UP", "PLAYER_XP_UPDATE", "UNIT_AURA",
             "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "PLAYER_UPDATE_RESTING", "ZONE_CHANGED_NEW_AREA", "UPDATE_EXHAUSTION", "PLAYER_TARGET_CHANGED", "CHAT_MSG_COMBAT_XP_GAIN"}) do
             self:RegisterEvent(e)
         end
