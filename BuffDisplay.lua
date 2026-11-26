@@ -58,8 +58,12 @@ function A.LayoutBuffs(parent, data, top)
         end)
     end
     local count=0
-    local cell=math.max(db.iconSize,24)
-    local height=db.iconSize+(db.showBuffValues and 12 or 0)+(db.showBuffTimers and 12 or 0)
+    local cell=db.iconSize
+    local hasTimer=false
+    for _,d in ipairs(data) do
+        if d.active and d.expires and d.expires>GetTime() then hasTimer=true end
+    end
+    local height=db.iconSize+(db.showBuffValues and 12 or 0)+(db.showBuffTimers and hasTimer and 12 or 0)
     for i,b in ipairs(buttons) do
         local d=data[i]
         d.included=d.active and (i==1 and db.rested or i~=1 and db.buffs)
@@ -78,7 +82,7 @@ function A.LayoutBuffs(parent, data, top)
             b.value:SetShown(db.showBuffValues)
             b.timer:ClearAllPoints()
             b.timer:SetPoint("TOP",db.showBuffValues and b.value or b.icon,"BOTTOM",0,-1)
-            b.timer:SetShown(db.showBuffTimers)
+            b.timer:SetShown(db.showBuffTimers and hasTimer)
             count=count+1
         end
     end
@@ -98,5 +102,5 @@ function A.LayoutBuffs(parent, data, top)
             end
         end
     end
-    return width,count>0 and height+db.iconGap or 0
+    return width,count>0 and height+db.buffGap or 0
 end
