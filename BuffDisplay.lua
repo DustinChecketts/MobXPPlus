@@ -19,7 +19,7 @@ local function tick()
     if not timed and ticker then ticker:Cancel(); ticker=nil end
 end
 
-function A.LayoutBuffs(parent, data, top)
+function A.LayoutBuffs(parent, data, top, suppressed)
     local db=A.db
     if not bar then
         bar=CreateFrame("Frame",nil,parent)
@@ -68,7 +68,7 @@ function A.LayoutBuffs(parent, data, top)
         local d=data[i]
         d.included=d.active and (i==1 and db.rested or i~=1 and db.buffs)
         b.data=d
-        local show=db.showBuffIcons and db.visible and (d.active or db.showInactiveBuffs)
+        local show=not suppressed and db.showBuffIcons and db.visible and (d.active or db.showInactiveBuffs)
         b:SetShown(show)
         if show then
             b:SetSize(cell,height)
