@@ -3,6 +3,7 @@ local C = {}
 A.Compat = C
 local _, _, _, build = GetBuildInfo()
 C.forever = build >= 16000 and build < 17000
+C.maxLevel = 60 -- Forever prototype target; revisit for other clients.
 
 function C.Readable(v)
     return not issecretvalue or not issecretvalue(v)
