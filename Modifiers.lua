@@ -5,7 +5,7 @@ function C.Modifiers()
     local bonus, auras = 0, {}
     local data = {
         {name="Rested XP", icon="Interface\\Icons\\Spell_Nature_Sleep", active=rested>0, pool=rested, percent=100, key="rest"},
-        {name="Sleeping Bag", icon=134400, percent=0, key="bag"},
+        {name="Sleeping Bag", icon="Interface\\Icons\\INV_Misc_Bag_10", percent=0, key="bag"},
         {name="XP Food (ID unverified)", icon="Interface\\Icons\\INV_Misc_Food_15", percent=5, key="food"},
     }
     if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
