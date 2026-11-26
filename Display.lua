@@ -87,9 +87,15 @@ function A.Refresh()
             row.border = {}
             for _, edge in ipairs({"TOP","BOTTOM","LEFT","RIGHT"}) do
                 local line = row:CreateTexture(nil,"ARTWORK")
-                line:SetPoint(edge)
-                if edge=="TOP" or edge=="BOTTOM" then line:SetHeight(1); line:SetPoint("LEFT"); line:SetPoint("RIGHT")
-                else line:SetWidth(1); line:SetPoint("TOP"); line:SetPoint("BOTTOM") end
+                if edge=="TOP" or edge=="BOTTOM" then
+                    line:SetHeight(1)
+                    line:SetPoint(edge.."LEFT")
+                    line:SetPoint(edge.."RIGHT")
+                else
+                    line:SetWidth(1)
+                    line:SetPoint("TOP"..edge)
+                    line:SetPoint("BOTTOM"..edge)
+                end
                 row.border[#row.border+1]=line
             end
             row.kills = row:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall")
@@ -119,7 +125,7 @@ function A.Refresh()
         local target = not capped and db.targetHighlight and (m==A.snapshot.target or (plus and m==high and A.snapshot.target and A.snapshot.target>high))
         if own then row.highlight:SetColorTexture(1,1,1,db.playerAlpha/100)
         elseif target then row.highlight:SetColorTexture(dr,dg,dbb,db.targetAlpha/100) end
-        row.highlight:SetShown(own or target)
+        row.highlight:SetShown(not not (own or target))
         for _,line in ipairs(row.border) do
             line:SetColorTexture(dr,dg,dbb,1)
             line:SetShown(not not target)
